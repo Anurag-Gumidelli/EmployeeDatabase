@@ -21,5 +21,7 @@ int validate_db_header(int dbFd, dbHeader **ppDbHeaderOut);
 int read_employees(int dbFd, dbHeader *pDbHeader, Employee **employeesOut);
 int output_db_file(int dbFd, dbHeader *pDbHeader, Employee *employees);
 int add_employee(dbHeader *pDbHeader, Employee **employees, char *newEmpString);
+void list_employees(dbHeader *pDbHeader, Employee *employees);
+void remove_employees_matching_name(dbHeader *pDbHeader, Employee **employees, char *empName);
 
 #endif

@@ -17,23 +17,31 @@ void print_usage(char *argv[]){
 int main(int argc, char *argv[]){
     
     int ch, dbfd;
-    bool newFile = false;
-    char *filePath = NULL;
     dbHeader *dbh = NULL;
     Employee *emps = NULL;
+    bool newFile = false;
+    bool listEmployees = false;
+    char *filePath = NULL;
     char *addString = NULL;
+    char *removeName = NULL;
 
-    while((ch = getopt(argc, argv, "nf:a:")) != -1){
+    while((ch = getopt(argc, argv, "nlf:a:r:")) != -1){
         switch (ch)
         {
             case 'n':
                 newFile = true;
+                break;
+            case 'l':
+                listEmployees = true;
                 break;
             case 'f':
                 filePath = optarg;
                 break;
             case 'a':
                 addString = optarg;
+                break;
+            case 'r':
+                removeName = optarg;
                 break;
             case '?':
                 printf("Unknown option detected -%c\n", ch);
@@ -86,6 +94,14 @@ int main(int argc, char *argv[]){
             close(dbfd);
             return -1;
         }
+    }
+
+    if(removeName) {
+        remove_employees_matching_name(dbh, &emps, removeName);
+    }
+
+    if(listEmployees) {
+        list_employees(dbh, emps);
     }
 
     output_db_file(dbfd, dbh, emps);

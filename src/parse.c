@@ -11,6 +11,45 @@
 #include "parse.h"
 
 
+
+void list_employees(dbHeader *pDbHeader, Employee *employees){
+    for(int i = 0; i < pDbHeader->numEmployees; i++){
+        printf("%d )\n", i+1);
+        printf("\tName        : %s\n", employees[i].name);
+        printf("\tAddress     : %s\n", employees[i].address);
+        printf("\tHourly Wage : %u\n", employees[i].hourlyWage);
+    }
+    return;
+}
+
+void remove_employees_matching_name(dbHeader *pDbHeader, Employee **employees, char *empName) {
+    Employee *emps = *employees;
+    uint32_t prevNumEmps = pDbHeader->numEmployees;
+    uint32_t numRemEmps = 0;
+    for(int i = prevNumEmps-1; i > -1; i--) {
+        numRemEmps++;
+        if(strcmp(emps[i].name, empName) == 0) {
+            numRemEmps--;
+            if(numRemEmps) {
+                memmove(&(emps[i]), &(emps[i+1]), numRemEmps*sizeof(Employee));
+            }
+        }
+    }
+
+    if(prevNumEmps - numRemEmps) {
+        emps = realloc(*employees, numRemEmps*sizeof(Employee));
+        if(emps == NULL) {
+            perror("realloc");
+            printf("Remove employees failed!\n");
+            return;
+        }
+        *employees = emps;
+        pDbHeader->numEmployees = numRemEmps;
+        pDbHeader->fileSize -= (prevNumEmps - numRemEmps)* sizeof(Employee);
+    }
+    return;
+}
+
 int add_employee(dbHeader *pDbHeader, Employee **employees, char *newEmpString) {
     char *name;
     char *address;
@@ -88,16 +127,22 @@ int output_db_file(int dbFd, dbHeader *pDbHeader, Employee *employees) {
     }
     uint32_t numE = pDbHeader->numEmployees;
 
-    pDbHeader->magic = htonl(pDbHeader->magic);
-    pDbHeader->version = htons(pDbHeader->version);
-    pDbHeader->numEmployees = htons(pDbHeader->numEmployees);
-    pDbHeader->fileSize = htonl(pDbHeader->fileSize);
 
     if(lseek(dbFd, 0, SEEK_SET) == -1){
         perror("lseek");
         printf("Failed write to disk!\n");
         return STATUS_ERROR;
     }
+
+    if(ftruncate(dbFd, pDbHeader->fileSize) == -1){
+        perror("ftruncate");
+        return STATUS_ERROR;
+    }
+
+    pDbHeader->magic = htonl(pDbHeader->magic);
+    pDbHeader->version = htons(pDbHeader->version);
+    pDbHeader->numEmployees = htons(pDbHeader->numEmployees);
+    pDbHeader->fileSize = htonl(pDbHeader->fileSize);
 
     if(write(dbFd, pDbHeader, DB_HEADER_SIZE) != DB_HEADER_SIZE) {
         perror("write");
@@ -106,6 +151,7 @@ int output_db_file(int dbFd, dbHeader *pDbHeader, Employee *employees) {
     }
 
     for(int i = 0; i < numE; i++){
+        employees[i].hourlyWage = htonl(employees[i].hourlyWage);
         if(write(dbFd, &(employees[i]), sizeof(Employee)) != sizeof(Employee)) {
             perror("write");
             printf("Failed write to disk!\n");
