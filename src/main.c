@@ -19,9 +19,11 @@ int main(int argc, char *argv[]){
     int ch, dbfd;
     bool newFile = false;
     char *filePath = NULL;
-    dbHeader *dbHeader = NULL;
+    dbHeader *dbh = NULL;
+    Employee *emps = NULL;
+    char *addString = NULL;
 
-    while((ch = getopt(argc, argv, "nf:")) != -1){
+    while((ch = getopt(argc, argv, "nf:a:")) != -1){
         switch (ch)
         {
             case 'n':
@@ -29,6 +31,9 @@ int main(int argc, char *argv[]){
                 break;
             case 'f':
                 filePath = optarg;
+                break;
+            case 'a':
+                addString = optarg;
                 break;
             case '?':
                 printf("Unknown option detected -%c\n", ch);
@@ -50,7 +55,7 @@ int main(int argc, char *argv[]){
             printf("Unable to create new db file at %s\n", filePath);
             return -1;
         }
-        if(create_db_header(&dbHeader) == STATUS_ERROR){
+        if(create_db_header(&dbh) == STATUS_ERROR){
             printf("Failed to create database header\n");
             close(dbfd);
             return -1;
@@ -62,14 +67,28 @@ int main(int argc, char *argv[]){
             printf("Unable to open db file at %s\n", filePath);
             return -1;
         }
-        if(validate_db_header(dbfd, &dbHeader) == STATUS_ERROR){
+        if(validate_db_header(dbfd, &dbh) == STATUS_ERROR){
             printf("Failed to validate database header\n");
             close(dbfd);
             return -1;
         }
     }
 
-    output_db_file(dbfd, dbHeader, NULL);
+    if(read_employees(dbfd, dbh, &emps) == STATUS_ERROR){
+        printf("Failed to read database employees\n");
+        close(dbfd);
+        return -1;
+    }
+
+    if(addString){
+        if(add_employee(dbh, &emps, addString) == STATUS_ERROR){
+            printf("Failed to add employee  %s to database\n", addString);
+            close(dbfd);
+            return -1;
+        }
+    }
+
+    output_db_file(dbfd, dbh, emps);
 
     return 0;
 }

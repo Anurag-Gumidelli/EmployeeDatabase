@@ -13,12 +13,13 @@ typedef struct db_header_t{
 typedef struct employee_t {
     char name[STR_MAX_SIZE];
     char address[STR_MAX_SIZE];
-    unsigned int hourlyWage;
+    uint32_t hourlyWage;
 } Employee;
 
 int create_db_header(dbHeader **ppDbHeaderOut);
 int validate_db_header(int dbFd, dbHeader **ppDbHeaderOut);
 int read_employees(int dbFd, dbHeader *pDbHeader, Employee **employeesOut);
 int output_db_file(int dbFd, dbHeader *pDbHeader, Employee *employees);
+int add_employee(dbHeader *pDbHeader, Employee **employees, char *newEmpString);
 
 #endif
